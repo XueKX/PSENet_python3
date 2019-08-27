@@ -1,7 +1,7 @@
 ## Introduction
 Progressive Scale Expansion Network (PSENet) for python3
 
-##reference
+## reference
 https://github.com/whai362/PSENet 
 
 ## Requirements
@@ -10,7 +10,6 @@ https://github.com/whai362/PSENet
 * pyclipper 1.1
 * Polygon3 
 * opencv-python 4.0
-
 
 ## Testing
 ```

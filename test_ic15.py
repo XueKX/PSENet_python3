@@ -37,14 +37,44 @@ def debug(idx, img_paths, imgs, output_root):
     cv2.imwrite(output_root + img_name, res)
 
 
-def write_result_as_txt(image_name, bboxes, path):
+def get_coords_and_write(image_name, bboxes, path):
+    '''
+     return x1,y1,x4,y4
+    :param image_name:
+    :param bboxes:
+    :param path:
+    :return:
+    '''
     filename = util.io.join_path(path, 'res_%s.txt' % (image_name))
     lines = []
     for b_idx, bbox in enumerate(bboxes):
         values = [int(v) for v in bbox]
         line = "%d, %d, %d, %d, %d, %d, %d, %d\n" % tuple(values)
         lines.append(line)
-    util.io.write_lines(filename, lines)
+    new_lines = fliter_coords(lines)
+    util.io.write_lines(filename, str(new_lines))
+    return new_lines
+
+
+def fliter_coords(point_list):
+    '''
+    return x1,y1,x4,y4
+    :param point_list:
+    :return:
+    '''
+
+    result = []
+    for old_point in point_list:
+        new_list = []
+        old_point = old_point.replace('\n', '').split(',')
+        x = [int(old_point[0]), int(old_point[2]), int(old_point[4]), int(old_point[6])]
+        y = [int(old_point[1]), int(old_point[3]), int(old_point[5]), int(old_point[7])]
+        new_list.append(min(x))
+        new_list.append(min(y))
+        new_list.append(max(x) + 5)
+        new_list.append(max(y) + 1)
+        result.append(new_list)
+    return result
 
 
 def polygon_from_points(points):
@@ -113,7 +143,7 @@ def test(args):
     for idx, (org_img, img) in enumerate(test_loader):
         print('progress: %d / %d' % (idx, len(test_loader)))
         sys.stdout.flush()
-        img = Variable(img.cuda(), volatile=True)
+        img = Variable(img.cuda())
         org_img = org_img.numpy().astype('uint8')[0]
         text_box = org_img.copy()
 
@@ -165,10 +195,13 @@ def test(args):
             cv2.drawContours(text_box, [bbox.reshape(4, 2)], -1, (0, 255, 0), 2)
 
         image_name = data_loader.img_paths[idx].split('/')[-1].split('.')[0]
-        write_result_as_txt(image_name, bboxes, args.outputs_path)
+        # save contours image
+        cv2.imwrite('{}/{}_contours.png'.format(args.outputs_path, image_name), text_box)
 
-        text_box = cv2.resize(text_box, (text.shape[1], text.shape[0]))
-        debug(idx, data_loader.img_paths, [[text_box]], args.outputs_path)
+        get_coords_and_write(image_name, bboxes, args.outputs_path)
+
+        # text_box = cv2.resize(text_box, (text.shape[1], text.shape[0]))
+        # debug(idx, data_loader.img_paths, [[text_box]], args.outputs_path)
 
     # cmd = 'cd %s;zip -j %s %s/*'%('./outputs/', 'submit_ic15.zip', 'submit_ic15');
     # print(cmd)
